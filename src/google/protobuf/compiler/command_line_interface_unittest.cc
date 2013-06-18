@@ -254,13 +254,27 @@ void CommandLineInterfaceTest::TearDown() {
   mock_generators_to_delete_.clear();
 }
 
+namespace {
+  std::string getPathTo_test_plugin_exe() {
+    std::stringstream ss;
+    ss << "build/" << ((sizeof(void*) == 8) ? "x64" : "Win32") << "_"
+#ifdef _DEBUG
+      << "Debug"
+#else
+      << "Release"
+#endif
+      << "/test_plugin/test_plugin.exe";
+    return ss.str();
+  }
+}
+
 void CommandLineInterfaceTest::Run(const string& command) {
   vector<string> args;
   SplitStringUsing(command, " ", &args);
 
   if (!disallow_plugins_) {
     cli_.AllowPlugins("prefix-");
-    const char* possible_paths[] = {
+    std::vector<std::string> possible_paths;
       // When building with shared libraries, libtool hides the real executable
       // in .libs and puts a fake wrapper in the current directory.
       // Unfortunately, due to an apparent bug on Cygwin/MinGW, if one program
@@ -273,15 +287,15 @@ void CommandLineInterfaceTest::Run(const string& command) {
       // directly, it works -- I guess the environment variables set by the
       // protobuf-tests.exe wrapper happen to be correct for it too.  So we do
       // that.
-      ".libs/test_plugin.exe",  // Win32 w/autotool (Cygwin / MinGW)
-      "test_plugin.exe",        // Other Win32 (MSVC)
-      "test_plugin",            // Unix
-    };
-
+    possible_paths.push_back(".libs/test_plugin.exe"    ); // Win32 w/autotool (Cygwin / MinGW)
+    possible_paths.push_back("test_plugin.exe"          ); // Other Win32 (MSVC)
+    possible_paths.push_back("test_plugin"              ); // Unix
+    possible_paths.push_back(getPathTo_test_plugin_exe()); // doo windows build system
+          
     string plugin_path;
 
-    for (int i = 0; i < GOOGLE_ARRAYSIZE(possible_paths); i++) {
-      if (access(possible_paths[i], F_OK) == 0) {
+    for (int i = 0; i < possible_paths.size(); i++) {
+      if (access(possible_paths[i].c_str(), F_OK) == 0) {
         plugin_path = possible_paths[i];
         break;
       }
