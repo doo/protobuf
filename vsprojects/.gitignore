@@ -1,6 +1,7 @@
 build
 *.sdf
 *.suo
+*.opensdf
 
 #generated files from .proto
 google/protobuf
