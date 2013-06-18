@@ -782,7 +782,11 @@ namespace internal {
 template <typename Element, bool HasTrivialCopy>
 void ElementCopier<Element, HasTrivialCopy>::operator()(
     Element to[], const Element from[], int array_size) {
+#ifdef _WIN32 
+  std::copy(from, from + array_size, stdext::make_checked_array_iterator(to, array_size));
+#else
   std::copy(from, from + array_size, to);
+#endif
 }
 
 template <typename Element>
